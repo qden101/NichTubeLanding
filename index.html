@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NichTube — Keyword Research for YouTube Niches</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 0 auto; padding: 2rem 1rem; line-height: 1.5; background: #fafafa; }
+    header { text-align: center; margin-bottom: 2rem; }
+    h1 { color: #1a1a1a; margin-bottom: 0.5rem; }
+    .tagline { color: #555; font-size: 1.1rem; }
+    
+    .card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+    .card h2 { margin-top: 0; color: #1a1a1a; font-size: 1.2rem; }
+    
+    .form-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { flex: 1; min-width: 200px; }
+    label { display: block; font-weight: 500; margin-bottom: 0.4rem; color: #333; }
+    select, input { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+    select:focus, input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    
+    button { background: #2563eb; color: #fff; border: none; padding: 0.7rem 1.5rem; border-radius: 6px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button:disabled { background: #93c5fd; cursor: not-allowed; }
+    
+    .loading { display: inline-flex; align-items: center; gap: 0.5rem; color: #666; }
+    .spinner { width: 16px; height: 16px; border: 2px solid #e0e0e0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.7rem 0.8rem; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f8fafc; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
+    th:hover { background: #f1f5f9; }
+    tr:hover { background: #fafafa; }
+    .sortable::after { content: ' ⇅'; font-size: 0.7rem; opacity: 0.4; }
+    .sort-asc::after { content: ' ↑'; opacity: 1; }
+    .sort-desc::after { content: ' ↓'; opacity: 1; }
+    
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .badge-low { background: #dcfce7; color: #166534; }
+    .badge-medium { background: #fef9c3; color: #854d0e; }
+    .badge-high { background: #fee2e2; color: #991b1b; }
+    
+    .empty { text-align: center; color: #999; padding: 3rem; }
+    .meta { color: #6b7280; font-size: 0.85rem; margin-top: 1rem; }
+    
+    footer { text-align: center; color: #999; font-size: 0.85rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NichTube</h1>
+    <p class="tagline">AI-powered keyword research for YouTube niches</p>
+  </header>
+
+  <img class="screenshot" src="https://raw.githubusercontent.com/qden101/NichTubeLanding/main/screenshot.png" alt="NichTube dashboard mockup" style="width:100%; max-width:1000px; height:auto; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-bottom:2rem; display:block;">
+
+  <div class="card">
+    <h2>Discover Keywords</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="category">Category</label>
+        <select id="category">
+          <option value="Finance">Finance</option>
+          <option value="Fitness">Fitness</option>
+          <option value="Software">Software</option>
+          <option value="Business">Business</option>
+          <option value="Gaming">Gaming</option>
+          <option value="Productivity">Productivity</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Beauty">Beauty</option>
+          <option value="Sports">Sports</option>
+          <option value="Technology">Technology</option>
+        </select>
+      </div>
+      <div class="form-group" style="min-width:120px;">
+        <label for="limit">Limit</label>
+        <input type="number" id="limit" value="50" min="10" max="200" step="10">
+      </div>
+      <div class="form-group" style="min-width:140px;">
+        <label> </label>
+        <button id="searchBtn" onclick="runSearch()">Search Keywords</button>
+      </div>
+    </div>
+    <div id="loading" class="loading" style="display:none; margin-top:1rem;">
+      <div class="spinner"></div> Querying Google Ads Keyword Plan API…
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Results</h2>
+    <div id="empty" class="empty">Select a category and click Search</div>
+    <table id="resultsTable" style="display:none;">
+      <thead>
+        <tr>
+          <th class="sortable" data-key="keyword">Keyword</th>
+          <th class="sortable" data-key="avgMonthlySearches" data-type="number">Monthly Searches</th>
+          <th class="sortable" data-key="competitionIndex" data-type="number">Comp. Index</th>
+          <th>Competition</th>
+          <th class="sortable" data-key="lowTopOfPageBidMicros" data-type="number">Low Bid ($)</th>
+          <th class="sortable" data-key="highTopOfPageBidMicros" data-type="number">High Bid ($)</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+    <p id="meta" class="meta" style="display:none;"></p>
+  </div>
+
+  <footer>
+    <p>Contact: iimmon557@gmail.com  |  NichTube — Keyword research for YouTube niches  |  Not affiliated with Google or YouTube</p>
+    <p style="margin-top:0.5rem;"><strong>API Usage:</strong> Google Ads API (Keyword Plan Idea Service) — read-only keyword discovery. No ad creation, bidding, or account management.</p>
+  </footer>
+
+<script>
+// Mock data generator (simulates Google Ads API response)
+const MOCK_KEYWORDS = {
+  Finance: [
+    'personal finance tips', 'best budgeting app', 'how to invest money', 'stock market basics', 'retirement planning',
+    'credit score improvement', 'tax saving strategies', 'emergency fund', 'crypto investing', 'real estate investing',
+    'dividend stocks', 'index funds', 'robo advisors', 'high yield savings', 'debt payoff strategies',
+    'financial independence', 'passive income ideas', 'money management apps', 'investment portfolio', 'financial literacy'
+  ],
+  Fitness: [
+    'home workout routine', 'muscle building exercises', 'weight loss tips', 'hiit workouts', 'yoga for beginners',
+    'strength training program', 'cardio exercises', 'protein powder reviews', 'intermittent fasting', 'bodyweight exercises',
+    'gym workout plan', 'fitness tracker', 'pre workout supplement', 'post workout recovery', 'flexibility exercises',
+    'core strengthening', 'running for beginners', 'crossfit workouts', 'nutrition for muscle gain', 'fitness motivation'
+  ],
+  Software: [
+    'javascript tutorial', 'react hooks', 'python programming', 'api design patterns', 'docker containers',
+    'kubernetes basics', 'microservices architecture', 'clean code principles', 'git workflow', 'typescript guide',
+    'nodejs backend', 'database design', 'ci/cd pipeline', 'cloud computing', 'devops tools',
+    'testing strategies', 'system design', 'api security', 'code review practices', 'software architecture'
+  ],
+  Business: [
+    'startup funding', 'business plan template', 'marketing strategy', 'sales funnel', 'customer acquisition',
+    'brand positioning', 'competitive analysis', 'business model canvas', 'lean startup methodology', 'growth hacking',
+    'product market fit', 'saas metrics', 'customer retention', 'pricing strategy', 'partnership development',
+    'market research', 'business scaling', 'leadership skills', 'team building', 'operational efficiency'
+  ],
+  Gaming: [
+    'best pc games 2024', 'gaming laptop reviews', 'esports tournaments', 'streaming setup guide', 'game development unity',
+    'indie game recommendations', 'vr gaming', 'retro gaming', 'console comparison', 'gaming chair reviews'
+  ],
+  Productivity: [
+    'time management techniques', 'notion templates', 'obsidian workflow', 'deep work strategies', 'habit tracker apps',
+    'pomodoro technique', 'weekly planning', 'digital minimalism', 'focus music', 'task management systems'
+  ],
+  Entertainment: [
+    'movie reviews', 'tv show recommendations', 'streaming service comparison', 'celebrity news', 'pop culture analysis',
+    'youtube creator interviews', 'viral video trends', 'entertainment news', 'award show predictions', 'fan theories'
+  ],
+  Beauty: [
+    'skincare routine', 'makeup tutorial', 'hair care tips', 'best drugstore makeup', 'anti aging products',
+    'korean skincare', 'clean beauty brands', 'foundation matching', 'eyeshadow palette reviews', 'lipstick shades'
+  ],
+  Sports: [
+    'football training drills', 'basketball skills', 'soccer tactics', 'marathon training plan', 'strength training for athletes',
+    'sports nutrition', 'injury prevention', 'recovery techniques', 'youth sports coaching', 'fantasy sports strategy'
+  ],
+  Technology: [
+    'ai tools 2024', 'machine learning basics', 'cybersecurity tips', 'smart home setup', 'electric vehicle reviews',
+    'programming languages comparison', 'web3 explained', 'quantum computing', 'robotics projects', 'tech career advice'
+  ]
+};
+
+function generateMockResults(category, limit) {
+  const base = MOCK_KEYWORDS[category] || MOCK_KEYWORDS.Finance;
+  const results = [];
+  for (let i = 0; i < limit; i++) {
+    const baseKw = base[i % base.length];
+    const variation = i >= base.length ? ` ${Math.floor(i / base.length) + 1}` : '';
+    const searches = Math.floor(Math.random() * 22000) + 800;
+    const compIndex = Math.floor(Math.random() * 45) + 5;
+    const lowBid = Math.floor(Math.random() * 5500000) + 500000;
+    const highBid = lowBid + Math.floor(Math.random() * 12000000);
+    const comp = compIndex < 20 ? 'LOW' : compIndex < 40 ? 'MEDIUM' : 'HIGH';
+    results.push({
+      keyword: `${baseKw}${variation}`,
+      avgMonthlySearches: searches,
+      competitionIndex: compIndex,
+      competition: comp,
+      lowTopOfPageBidMicros: lowBid,
+      highTopOfPageBidMicros: highBid,
+      category: 'Finance' // will be overridden
+    });
+  }
+  return results.map(r => ({ ...r, category }));
+}
+
+function formatBid(micros) {
+  return (micros / 1_000_000).toFixed(2);
+}
+
+function formatNumber(n) {
+  return n.toLocaleString();
+}
+
+function getBadgeClass(comp) {
+  return comp === 'LOW' ? 'badge-low' : comp === 'MEDIUM' ? 'badge-medium' : 'badge-high';
+}
+
+// State
+let currentResults = [];
+let sortKey = null;
+let sortDir = 'asc';
+
+const searchBtn = document.getElementById('searchBtn');
+const loading = document.getElementById('loading');
+const empty = document.getElementById('empty');
+const table = document.getElementById('resultsTable');
+const body = document.getElementById('resultsBody');
+const meta = document.getElementById('meta');
+
+async function runSearch() {
+  const category = document.getElementById('category').value;
+  const limit = parseInt(document.getElementById('limit').value, 10) || 50;
+  
+  searchBtn.disabled = true;
+  searchBtn.textContent = 'Searching…';
+  loading.style.display = 'inline-flex';
+  empty.style.display = 'none';
+  table.style.display = 'none';
+  meta.style.display = 'none';
+  body.innerHTML = '';
+  
+  // Simulate API delay
+  await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
+  
+  currentResults = generateMockResults(category, limit);
+  renderResults();
+  
+  searchBtn.disabled = false;
+  searchBtn.textContent = 'Search Keywords';
+  loading.style.display = 'none';
+  table.style.display = 'table';
+  meta.style.display = 'block';
+  meta.textContent = `Showing ${currentResults.length} keywords for "${category}" • Mock data (Google Ads API not connected)`;
+}
+
+function renderResults() {
+  const sorted = [...currentResults].sort((a, b) => {
+    if (!sortKey) return 0;
+    const aVal = a[sortKey];
+    const bVal = b[sortKey];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (typeof aVal === 'number') return (aVal - bVal) * dir;
+    return aVal.localeCompare(bVal) * dir;
+  });
+  
+  body.innerHTML = sorted.map(r => `
+    <tr>
+      <td><strong>${r.keyword}</strong></td>
+      <td>${formatNumber(r.avgMonthlySearches)}</td>
+      <td>${r.competitionIndex}</td>
+      <td><span class="badge ${getBadgeClass(r.competition)}">${r.competition}</span></td>
+      <td>$${formatBid(r.lowTopOfPageBidMicros)}</td>
+      <td>$${formatBid(r.highTopOfPageBidMicros)}</td>
+    </tr>
+  `).join('');
+  
+  // Update header sort indicators
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.key === sortKey) {
+      th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey = key;
+      sortDir = 'asc';
+    }
+    renderResults();
+  });
+});
+
+// Initial render
+document.getElementById('category').addEventListener('change', () => {
+  empty.style.display = 'block';
+  table.style.display = 'none';
+  meta.style.display = 'none';
+});
+</script>
+</body>
+</html>
